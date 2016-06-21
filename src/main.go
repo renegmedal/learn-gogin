@@ -1,89 +1,35 @@
 package main
 
 import (
-	"fmt"
-	"html/template"
 	"net/http"
-	"os"
-	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
-const port = "3000"
-
 func main() {
-	var templates *template.Template
-	var tmplCh = make(chan *template.Template)
+	r := gin.Default()
 
-	go func(ch <-chan *template.Template) {
-		for tmpl := range tmplCh {
-			templates = tmpl
-		}
-	}(tmplCh)
+	r.LoadHTMLGlob("templates/**/*.html")
 
-	go watchTemplateFolder(tmplCh)
-
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		path := r.URL.Path[1:]
-		if len(path) == 0 {
-			path = "index"
-		}
-
-		fmt.Println("++++ path: " + path)
-
-		err := templates.Lookup(path+".html").Execute(w, nil)
-		if err != nil {
-			fmt.Println("++++ error +++++")
-		}
+	r.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "index.html", nil)
 	})
 
-	http.Handle("/public/", http.FileServer(http.Dir(".")))
-	go http.ListenAndServe(":"+port, nil)
+	r.GET("/login", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "login.html", nil)
+	})
 
-	fmt.Println("Server is running on port " + port)
-	var a string
-	fmt.Scanln(&a)
-}
+	admin := r.Group("/admin")
 
-func parseTemplates(ch chan<- *template.Template) {
-	result := template.New("")
+	admin.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "admin-overview.html", nil)
+	})
 
-	const basePath = "templates/"
+	r.Static("/public", "./public")
 
-	template.Must(result.ParseGlob(basePath + "includes/**"))
-	template.Must(result.ParseGlob(basePath + "views/**"))
+	// or use this
+	// r.StaticFS("/public", http.Dir("./public"))
 
-	ch <- result
-}
-func watchTemplateFolder(ch chan<- *template.Template) {
-	updateTimes := map[string]time.Time{}
-	const basePath = "templates"
-	var shouldUpdate bool
-	var scanFolder func(string)
+	r.Run(":3000")
 
-	scanFolder = func(folder string) {
-		d, _ := os.Open(folder)
-		defer d.Close()
-		fis, _ := d.Readdir(-1)
-		for _, fi := range fis {
-			if fi.IsDir() && !shouldUpdate {
-				scanFolder(folder + "/" + fi.Name())
-			} else {
-				if updateTimes[folder+"/"+fi.Name()].Unix() < fi.ModTime().Unix() {
-					shouldUpdate = true
-					updateTimes[folder+"/"+fi.Name()] = fi.ModTime()
-				}
-			}
-		}
-	}
-
-	for {
-		time.Sleep(500 * time.Millisecond)
-		shouldUpdate = false
-
-		scanFolder(basePath)
-
-		if shouldUpdate {
-			parseTemplates(ch)
-		}
-	}
 }
