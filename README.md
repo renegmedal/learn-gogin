@@ -1,11 +1,8 @@
 
 
-To start
+To build and start:
 
-$ go build src/main.go
-$ main
-
-$ go build src/main.go && main
+$ go build application && application
 
 [GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
  - using env:	export GIN_MODE=release
@@ -14,4 +11,5 @@ $ go build src/main.go && main
 http://localhost:3000
 http://localhost:3000/login
 http://localhost:3000/admin/
- 
+
+http://localhost:3000/employees/962134/vacation
