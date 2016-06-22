@@ -13,3 +13,5 @@ http://localhost:3000/login
 http://localhost:3000/admin/
 
 http://localhost:3000/employees/962134/vacation
+
+http://localhost:3000/admin/
